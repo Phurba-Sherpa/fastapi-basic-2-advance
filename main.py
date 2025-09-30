@@ -1,8 +1,8 @@
 import random
 from enum import Enum
-from typing import Annotated
-from fastapi import FastAPI, Query
-from pydantic import AfterValidator, BaseModel
+from typing import Annotated, Literal
+from fastapi import FastAPI, Path, Query
+from pydantic import AfterValidator, BaseModel, Field
 
 class CardDataType(str, Enum):
     data1 = "DATA1"
@@ -15,6 +15,12 @@ class Item(BaseModel):
     price: float
     tax: float | None = None
     
+
+class FilterParams(BaseModel):
+    limit: int = Field(10, gt=0, le=100, description="Records count per request")
+    offset: int = Field(1, ge=1, description="Current index of record")
+    order_by: Literal["created_at", "updated_at"] = "updated_at"
+    tags: list[str] = []
 
 data = {
     "isbn-9781529046137": "The Hitchhiker's Guide to the Galaxy",
@@ -37,20 +43,16 @@ async def root():
 
 
 @app.get("/items")
-async def get_items(
-    id: Annotated[str | None, AfterValidator(check_valid_id)] = None,
-    offset: Annotated[int, Query(ge=1,description="Current page number from which records are to be fetched")] = 1, 
-    limit: Annotated[int, Query(ge=1, le=100, description="Number of records per request")] = 10,
-    q: Annotated[str | None, Query(max_length=50, deprecated=True, description="Query strong for the items to search in the database that have a good match")] = None):
-    if id:
-        item = data.get(id)
-    else:
-        id, item = random.choice(list(data.items()))
-    return {"id": id, "name": item}
+async def get_items(filter_query: Annotated[FilterParams, Query()]):
+    return filter_query
 
 @app.get("/items/{item_id}")
-async def get_item(item_id: int):
-    return {"item_id": item_id}
+async def get_item(item_id: Annotated[int, Path(ge=1, title="The ID of item", description="The ID of item for which details is to be retrieved")], 
+                   q: Annotated[str | None, Query(max_length=50, description="Keywords to look for in item")] = None):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
 
 @app.get("/cards/{card_data}")
 async def get_card(card_data: CardDataType):
