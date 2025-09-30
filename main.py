@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from typing import Annotated, Literal
-from fastapi import FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query
 from pydantic import AfterValidator, BaseModel, Field
 
 class CardDataType(str, Enum):
@@ -9,12 +9,24 @@ class CardDataType(str, Enum):
     data2 = "DATA2 "
     data3 = "DATA3"
 
+class Image(BaseModel):
+    name: str
+    url: str
+
 class Item(BaseModel):
     name: str
     desc: str | None = None
     price: float
     tax: float | None = None
+    tag: set[str] = set()
+    image: Image | None = None
     
+
+class Offer(BaseModel):
+    name: str
+    desc: str |  None  = None
+    price: float
+    items: list[Item]
 
 class FilterParams(BaseModel):
     limit: int = Field(10, gt=0, le=100, description="Records count per request")
@@ -71,3 +83,11 @@ async def create_item(item: Item):
         price_with_tax = item.tax + item.price
         item_dict.update({"price_with_tax": price_with_tax})
     return item_dict
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: str, item: Item):
+    return {"item_id": item_id, "item": item}
+
+@app.get("/offer")
+async def get_offers(offer:Offer):
+    return offer
