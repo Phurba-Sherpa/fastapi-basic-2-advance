@@ -1,4 +1,7 @@
+from datetime import datetime, time, timedelta
+from inspect import walktree
 import random
+from uuid import UUID
 from enum import Enum
 from typing import Annotated, Literal
 from fastapi import Body, FastAPI, Path, Query
@@ -14,19 +17,20 @@ class Image(BaseModel):
     url: str
 
 class Item(BaseModel):
-    name: str
+    name: str = Field(description="Name or title for the item", title="Item title", max_length=255, examples=["Oneplus nord 3 earbuds pro", "Boat Airdopes pro"])
     desc: str | None = None
     price: float
     tax: float | None = None
     tag: set[str] = set()
     image: Image | None = None
-    
+
 
 class Offer(BaseModel):
     name: str
     desc: str |  None  = None
     price: float
     items: list[Item]
+
 
 class FilterParams(BaseModel):
     limit: int = Field(10, gt=0, le=100, description="Records count per request")
@@ -85,8 +89,13 @@ async def create_item(item: Item):
     return item_dict
 
 @app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    return {"item_id": item_id, "item": item}
+async def update_item(item_id: UUID, 
+                      start_datetime: Annotated[datetime, Body()],
+                      end_datetime: Annotated[datetime, Body()],
+                      process_after: Annotated[timedelta, Body()],
+                      repeat_at: Annotated[time | None, Body()] = None
+                      ):
+    return {"item_id": item_id, "start_datetime": start_datetime, "end_datetime": end_datetime, "process_after": process_after, "repeat_at": repeat_at}
 
 @app.get("/offer")
 async def get_offers(offer:Offer):
