@@ -2,9 +2,10 @@ from datetime import datetime, time, timedelta
 from uuid import UUID
 from enum import Enum
 from typing import Annotated, Any, Literal
-from fastapi import Body, Cookie, FastAPI, Form, Header, Path, Query, Response, status
+from fastapi import Body, Cookie, FastAPI, File, Form, Header, Path, Query, Response, UploadFile, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
+from starlette.status import HTTP_201_CREATED
 
 class SignUp(BaseModel):
     username: str
@@ -146,3 +147,10 @@ async def create_account(signup: Annotated[SignUp, Form()]):
     return {"message": "Account created"}
 
 
+@app.post("/files", status_code=status.HTTP_201_CREATED)
+async def create_file(file: Annotated[bytes, File()]):
+    return {"len": len(file)}
+
+@app.post("/upload-files", status_code=HTTP_201_CREATED)
+async def upload_file(file: UploadFile):
+    return {"name": file.filename}
