@@ -2,9 +2,13 @@ from datetime import datetime, time, timedelta
 from uuid import UUID
 from enum import Enum
 from typing import Annotated, Any, Literal
-from fastapi import Body, Cookie, FastAPI, Header, Path, Query, Response
+from fastapi import Body, Cookie, FastAPI, Form, Header, Path, Query, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
+
+class SignUp(BaseModel):
+    username: str
+    password: str
 
 class UserBase(BaseModel):
     username: str
@@ -108,7 +112,7 @@ async def get_card(card_data: CardDataType):
 async def get_files(file_path: str):
     return {"file_path": file_path}
 
-@app.post("/items")
+@app.post("/items", status_code=status.HTTP_201_CREATED)
 async def create_item(item: Item):
     item_dict = item.model_dump()
     if item.tax is not None:
@@ -135,4 +139,10 @@ async def get_portal(teleport: bool = False) -> Response:
         return RedirectResponse(url="http://localhost:8000/items")
     else:
         return JSONResponse(content={"message": "Here is your interdimensional portal"})
+
+# Sign up
+@app.post("/sign-up", status_code=status.HTTP_201_CREATED)
+async def create_account(signup: Annotated[SignUp, Form()]):
+    return {"message": "Account created"}
+
 
